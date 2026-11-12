@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plantillas WhatsApp - Módulo 4</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-6">
+  <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Mis Plantillas WhatsApp</h1>
+
+  <!-- Dos columnas: formulario y generador a la izquierda, tarjetas a la derecha -->
+  <div class="max-w-5xl mx-auto grid gap-6 md:grid-cols-[340px_1fr]">
+    
+    <!-- Columna izquierda: acciones -->
+    <div class="grid gap-6 self-start">
+      
+      <!-- 1. Formulario para crear plantilla -->
+      <form id="form-plantilla" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 grid gap-3">
+        <h2 class="font-bold text-slate-700 text-lg">Nueva Plantilla</h2>
+        <input id="titulo" type="text" placeholder="Título (ej. Bienvenida)" required class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <input id="hashtag" type="text" placeholder="Hashtag (ej. ventas)" required class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <textarea id="mensaje" rows="3" placeholder="Mensaje (usa {nombre} o {producto})" required class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
+          + Agregar plantilla
+        </button>
+      </form>
+
+      <!-- 2. Generador: Usar plantilla y reemplazar variables -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 grid gap-3">
+        <h2 class="font-bold text-slate-700 text-lg">Usar Plantilla</h2>
+        
+        <select id="select-plantilla" class="p-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">-- Selecciona una plantilla --</option>
+        </select>
+
+        <input id="input-nombre" type="text" placeholder="Valor para {nombre} (ej. Ana)" class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input id="input-producto" type="text" placeholder="Valor para {producto} (opcional)" class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+        <button id="btn-generar" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
+          Generar mensaje
+        </button>
+
+        <!-- Caja de salida y botón Copiar -->
+        <div id="caja-salida" class="hidden mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg grid gap-2">
+          <p id="salida-mensaje" class="text-sm text-slate-800 whitespace-pre-wrap"></p>
+          <button id="btn-copiar" type="button" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2 px-3 rounded-lg transition justify-self-end">
+            📋 Copiar al portapapeles
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: grid de tarjetas -->
+    <div>
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-bold text-slate-700 text-lg">Plantillas Guardadas (<span id="contador-plantillas">0</span>)</h2>
+      </div>
+      <ul id="listaPlantillas" class="grid gap-4 sm:grid-cols-2 content-start"></ul>
+    </div>
+
+  </div>
+
+  <script src="js/models/Template.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
