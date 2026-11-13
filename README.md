@@ -1,32 +1,30 @@
-# Gestor de Plantillas para WhatsApp (Laboratorio 13 - Módulo 4)
+# Gestor de Plantillas para WhatsApp (Laboratorio 14 - Módulo 4)
 
-Aplicación web interactiva desarrollada en JavaScript moderno (ES6+) y Tailwind CSS para crear, organizar y reutilizar plantillas de mensajes de WhatsApp con variables dinámicas (`{nombre}` y `{producto}`)[cite: 14, 15, 18].
+Aplicación web interactiva desarrollada en JavaScript moderno (ES6+) y Tailwind CSS para crear, editar, eliminar, filtrar y reutilizar plantillas de mensajes de WhatsApp con variables dinámicas (`{nombre}` y `{producto}`).
 
 ## 🚀 Enlace al Proyecto Desplegado
 [Ver Gestor de Plantillas en GitHub Pages](https://ericksalazarsanchez-byte.github.io/whatsapp-templates/)
 
 ---
 
-## 📸 Evidencia de Funcionamiento ("Usar Plantilla")
-![Generador de Mensaje Final](assets/generador-exito.png)
+## 🎯 Delegación de Eventos (`listaPlantillas`)
+En lugar de asignar un `addEventListener` individual a cada botón de **Editar** o **Eliminar** dentro de cada tarjeta (los cuales se destruyen y recrean cada vez que se ejecuta `render()`), se implementó **un único listener en el contenedor padre** (`<ul id="listaPlantillas">`)[cite: 32]:
+
+* Cuando el usuario hace clic dentro de la lista, se captura `evento.target.closest('button')` para identificar el botón pulsado.
+* Mediante `classList.contains('btn-editar')` o `classList.contains('btn-eliminar')` se determina la acción a ejecutar[cite: 32].
+* Se lee el identificador único de la plantilla desde el atributo HTML `data-id` (`btn.dataset.id`) para operar sobre el elemento exacto en el estado central sin importar cuántas tarjetas existan[cite: 31, 32].
 
 ---
 
-## 🏗️ Arquitectura y Modelado de Datos (`class Template`)
-Para mantener una única fuente de verdad (estado centralizado), cada plantilla se modela como una instancia de la clase **`Template`** (`js/models/Template.js`)[cite: 16, 17]:
+## 📊 Función Pura y Datos Derivados (`contarPorHashtag`)
+La función `contarPorHashtag(plantillas)` es una **función pura** diseñada para calcular estadísticas en tiempo real a partir del estado central sin mutar el arreglo original[cite: 27, 33]:
 
-* **`constructor(titulo, mensaje, hashtag)`:** Inicializa las propiedades principales de cada plantilla[cite: 17].
-* **`this.fecha = new Date()`:** Registra automáticamente el momento exacto en que se crea la plantilla[cite: 17].
-* **`obtenerFechaFormateada()`:** Utiliza `.toLocaleDateString('es-PE')` para presentar la fecha en formato legible dentro de cada tarjeta[cite: 17].
+* **¿Para qué sirve?** Recorre la lista actual de plantillas en `state.plantillas` y construye un objeto diccionario donde cada llave es un hashtag (ej. `#ventas`, `#soporte`) y su valor es la cantidad de veces que aparece[cite: 33].
+* **Sincronización automática:** Es invocada dentro de `renderStats()` al final de cada ciclo de `render()`, garantizando que el total de plantillas, el desglose por etiqueta y el indicador de hashtag más usado se actualicen automáticamente al crear, editar o eliminar registros[cite: 34, 35].
 
 ---
 
-## 🔤 Métodos de String Implementados
-La aplicación manipula y normaliza las cadenas de texto ingresadas por el usuario mediante los siguientes métodos nativos de JavaScript:
-
-* **`.trim()`:** Elimina espacios en blanco innecesarios al inicio y al final de los campos de título, mensaje y variables antes de guardarlos o procesarlos[cite: 16].
-* **`.toLowerCase()`:** Normaliza los hashtags a minúsculas para mantener uniformidad visual en las etiquetas[cite: 16].
-* **`.startsWith()`:** Verifica si el hashtag ingresado comienza con el símbolo `#`; si no lo tiene, lo antepone automáticamente.
-* **`.replaceAll()`:** Sustituye todas las ocurrencias de las variables `{nombre}` y `{producto}` dentro de la plantilla por los valores reales ingresados en el generador.
-* **`.slice()`:** Recorta la vista previa de los mensajes que superan los 75 caracteres (`texto.slice(0, 75) + '...'`) para conservar la simetría de la rejilla de tarjetas[cite: 18].
-* **`.length`:** Calcula y muestra dinámicamente la cantidad exacta de caracteres de cada plantilla[cite: 18].
+## 🛠️ Funcionalidades CRUD y Filtrado
+* **Crear y Editar (`HU2`):** Actualización inmutable del estado mediante `.map()` y modo de edición con botón de cancelación[cite: 33, 35].
+* **Eliminar (`HU1`):** Filtrado inmutable mediante `.filter()` con confirmación previa al usuario[cite: 31, 35].
+* **Filtrado Reactivo (`HU4`):** Búsqueda instantánea por hashtag mediante la función derivada `plantillasVisibles()` usando `.includes()` sin alterar los datos reales del estado[cite: 35].

@@ -1,17 +1,26 @@
 // =================================================================
-// LABORATORIO 13: GESTOR DE PLANTILLAS WHATSAPP (ESTADO Y STRINGS)
+// LABORATORIO 14: INTERACCIÓN, DELEGACIÓN DE EVENTOS Y DATOS DERIVADOS
 // =================================================================
 
 // 1. ESTADO CENTRAL (Única fuente de verdad)
-const plantillas = [];
+const state = {
+  plantillas: [],
+  editandoId: null,
+  filtro: ''
+};
 
 // Referencias al DOM
-const formPlantilla = document.getElementById('form-plantilla');
+const form = document.getElementById('form-plantilla');
+const tituloForm = document.getElementById('titulo-form');
 const inputTitulo = document.getElementById('titulo');
 const inputHashtag = document.getElementById('hashtag');
 const inputMensaje = document.getElementById('mensaje');
-const listaPlantillas = document.getElementById('listaPlantillas');
-const contadorPlantillas = document.getElementById('contador-plantillas');
+const btnSubmit = document.getElementById('btn-submit');
+const btnCancelar = document.getElementById('btn-cancelar');
+
+const lista = document.getElementById('listaPlantillas');
+const panelStats = document.getElementById('panel-stats');
+const inputBuscador = document.getElementById('buscador');
 
 // Referencias del Generador
 const selectPlantilla = document.getElementById('select-plantilla');
@@ -22,105 +31,232 @@ const cajaSalida = document.getElementById('caja-salida');
 const salidaMensaje = document.getElementById('salida-mensaje');
 const btnCopiar = document.getElementById('btn-copiar');
 
-// 2. NORMALIZACIÓN Y MANIPULACIÓN DE TEXTO (Métodos de String)
-const formatearHashtag = (tag) => {
-  // Limpia espacios y convierte a minúsculas
+// 2. NORMALIZACIÓN DE HASHTAG
+const normalizarHashtag = (tag) => {
   let limpio = tag.trim().toLowerCase().replaceAll(' ', '');
-  // Asegura que empiece con '#' usando .startsWith()
   if (!limpio.startsWith('#')) {
     limpio = '#' + limpio;
   }
   return limpio;
 };
 
-// 3. PATRÓN RENDER() (Dibuja toda la UI desde el estado central)
-const render = () => {
-  // Limpiar contenedores antes de redibujar
-  listaPlantillas.innerHTML = '';
+// 3. FUNCIONES PURAS Y DATOS DERIVADOS (HU3 y HU4)
+function contarPorHashtag(plantillas) {
+  const conteo = {};
+  plantillas.forEach(function (plantilla) {
+    const elHashtag = plantilla.hashtag;
+    if (conteo[elHashtag]) {
+      conteo[elHashtag] = conteo[elHashtag] + 1;
+    } else {
+      conteo[elHashtag] = 1;
+    }
+  });
+  return conteo;
+}
+
+function plantillasVisibles() {
+  const filtroTexto = (state.filtro ?? '').trim().toLowerCase();
+  if (filtroTexto === '') return state.plantillas;
+  return state.plantillas.filter(plantilla =>
+    plantilla.hashtag.toLowerCase().includes(filtroTexto)
+  );
+}
+
+// 4. RENDERIZADO DE ESTADÍSTICAS (HU3 + Logro 2)
+function renderStats() {
+  const total = state.plantillas.length;
+  const porTag = contarPorHashtag(state.plantillas);
+  const entradas = Object.entries(porTag);
+
+  // Logro 2: Encontrar el hashtag más usado
+  let topTag = '';
+  let maxCantidad = 0;
+  entradas.forEach(([tag, cant]) => {
+    if (cant > maxCantidad) {
+      maxCantidad = cant;
+      topTag = tag;
+    }
+  });
+
+  const etiquetas = entradas
+    .map(([hashtag, cantidad]) =>
+      `<span class="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-medium">${hashtag} <strong>${cantidad}</strong></span>`
+    )
+    .join('');
+
+  const badgeTop = topTag && total > 0
+    ? `<span class="ml-auto text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">🏆 Top: ${topTag}</span>`
+    : '';
+
+  panelStats.innerHTML = `
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-sm font-bold text-slate-800">${total} plantilla(s)</span>
+      ${etiquetas}
+      ${badgeTop}
+    </div>
+  `;
+}
+
+// 5. PATRÓN RENDER() PRINCIPAL
+function render() {
+  lista.innerHTML = '';
   selectPlantilla.innerHTML = '<option value="">-- Selecciona una plantilla --</option>';
-  contadorPlantillas.textContent = plantillas.length;
 
-  plantillas.forEach((p, index) => {
-    // Logro 2: Recortar texto largo con .slice() para mantener la rejilla pareja
-    const mensajeVistaPrevia = p.mensaje.length > 75 
-      ? p.mensaje.slice(0, 75) + '...' 
-      : p.mensaje;
+  // Renderizar tarjetas visibles (filtradas o todas)
+  plantillasVisibles().forEach(function (plantilla) {
+    const mensajeVistaPrevia = plantilla.mensaje.length > 80
+      ? plantilla.mensaje.slice(0, 80) + '...'
+      : plantilla.mensaje;
 
-    // Crear tarjeta en el DOM
     const li = document.createElement('li');
-    li.className = 'bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between gap-3';
+    li.className = 'bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between';
     li.innerHTML = `
       <div>
-        <div class="flex justify-between items-start gap-2 mb-1">
-          <h3 class="font-bold text-slate-800 text-base">${p.titulo}</h3>
-          <span class="text-xs font-semibold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">
-            ${p.hashtag}
-          </span>
+        <div class="flex items-start justify-between gap-2">
+          <strong class="text-slate-800">${plantilla.titulo}</strong>
+          <span class="text-xs text-slate-400 shrink-0">${plantilla.obtenerFechaFormateada()}</span>
         </div>
-        <p class="text-sm text-slate-600 break-words">${mensajeVistaPrevia}</p>
+        <p class="text-sm text-slate-600 mt-1 break-words">${mensajeVistaPrevia}</p>
+        <div class="flex items-center justify-between mt-2">
+          <span class="inline-block text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">${plantilla.hashtag}</span>
+          <span class="text-[11px] text-slate-400">${plantilla.mensaje.length} chars</span>
+        </div>
       </div>
-      
-      <div class="border-t pt-2 flex justify-between items-center text-xs text-slate-400">
-        <span>📅 ${p.obtenerFechaFormateada()}</span>
-        <span>📝 ${p.mensaje.length} caracteres</span>
+
+      <div class="flex gap-2 mt-3 pt-2 border-t border-slate-100">
+        <button data-id="${plantilla.id}" class="btn-editar text-xs px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium transition">
+          ✏️ Editar
+        </button>
+        <button data-id="${plantilla.id}" class="btn-eliminar text-xs px-2.5 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100 font-medium transition">
+          🗑️ Eliminar
+        </button>
       </div>
     `;
-    listaPlantillas.appendChild(li);
+    lista.appendChild(li);
+  });
 
-    // Llenar también el <select> del generador
+  // Llenar el selector del generador con todas las plantillas del estado
+  state.plantillas.forEach(function (plantilla) {
     const option = document.createElement('option');
-    option.value = index;
-    option.textContent = `${p.titulo} (${p.hashtag})`;
+    option.value = plantilla.id;
+    option.textContent = `${plantilla.titulo} (${plantilla.hashtag})`;
     selectPlantilla.appendChild(option);
   });
-};
 
-// 4. AGREGAR PLANTILLA AL ESTADO
-const agregarPlantilla = (e) => {
-  e.preventDefault();
+  renderStats();
+}
 
-  // Limpieza de inputs con .trim()
-  const tituloLimpio = inputTitulo.value.trim();
-  const mensajeLimpio = inputMensaje.value.trim();
-  const hashtagFormateado = formatearHashtag(inputHashtag.value);
+// 6. OPERACIONES CRUD INMUTABLES (HU1 y HU2)
+function agregarPlantilla(titulo, mensaje, hashtag) {
+  const nueva = new Template(titulo, mensaje, hashtag);
+  state.plantillas = [...state.plantillas, nueva];
+}
 
-  if (!tituloLimpio || !mensajeLimpio || !hashtagFormateado) return;
+function eliminarPlantilla(id) {
+  // Logro 3: Confirmar antes de eliminar
+  const confirmar = confirm('¿Estás seguro de eliminar esta plantilla?');
+  if (!confirmar) return;
 
-  // Instanciar la clase Template y guardar en el estado central
-  const nuevaPlantilla = new Template(tituloLimpio, mensajeLimpio, hashtagFormateado);
-  plantillas.push(nuevaPlantilla);
-
-  // Limpiar formulario y actualizar pantalla
-  formPlantilla.reset();
+  state.plantillas = state.plantillas.filter(plantilla => plantilla.id !== id);
+  if (state.editandoId === id) cancelarEdicion();
   render();
-};
+}
 
-// 5. GENERADOR DE MENSAJE FINAL (.replaceAll())
-const generarMensajeFinal = () => {
-  const indiceSeleccionado = selectPlantilla.value;
-  if (indiceSeleccionado === '') {
+function cargarEnFormulario(id) {
+  const plantilla = state.plantillas.find(p => p.id === id);
+  if (!plantilla) return;
+
+  inputTitulo.value = plantilla.titulo;
+  inputMensaje.value = plantilla.mensaje;
+  inputHashtag.value = plantilla.hashtag;
+  state.editandoId = id;
+
+  // Cambiar apariencia del formulario a modo edición
+  tituloForm.textContent = 'Editar Plantilla';
+  btnSubmit.textContent = '💾 Guardar cambios';
+  btnSubmit.classList.replace('bg-emerald-600', 'bg-blue-600');
+  btnSubmit.classList.replace('hover:bg-emerald-700', 'hover:bg-blue-700');
+  btnCancelar.classList.remove('hidden');
+}
+
+function cancelarEdicion() {
+  state.editandoId = null;
+  form.reset();
+  tituloForm.textContent = 'Nueva Plantilla';
+  btnSubmit.textContent = '+ Agregar plantilla';
+  btnSubmit.classList.replace('bg-blue-600', 'bg-emerald-600');
+  btnSubmit.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
+  btnCancelar.classList.add('hidden');
+}
+
+// 7. DELEGACIÓN DE EVENTOS EN LA LISTA (HU1 y HU2)
+lista.addEventListener('click', function (evento) {
+  const btn = evento.target.closest('button');
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  if (btn.classList.contains('btn-eliminar')) eliminarPlantilla(id);
+  if (btn.classList.contains('btn-editar')) cargarEnFormulario(id);
+});
+
+// 8. EVENTO SUBMIT (CREAR O ACTUALIZAR)
+form.addEventListener('submit', function (evento) {
+  evento.preventDefault();
+
+  const tituloTexto = inputTitulo.value.trim();
+  const mensajeTexto = inputMensaje.value.trim();
+  const hashtagNormalizado = normalizarHashtag(inputHashtag.value);
+
+  if (!tituloTexto || !mensajeTexto || !hashtagNormalizado) return;
+
+  if (state.editandoId) {
+    // Actualización inmutable con .map() manteniendo los métodos de la instancia
+    state.plantillas = state.plantillas.map(plantilla => {
+      if (plantilla.id === state.editandoId) {
+        plantilla.titulo = tituloTexto;
+        plantilla.mensaje = mensajeTexto;
+        plantilla.hashtag = hashtagNormalizado;
+      }
+      return plantilla;
+    });
+    cancelarEdicion();
+  } else {
+    agregarPlantilla(tituloTexto, mensajeTexto, hashtagNormalizado);
+    form.reset();
+  }
+
+  render();
+});
+
+btnCancelar.addEventListener('click', cancelarEdicion);
+
+// 9. EVENTO BUSCADOR EN TIEMPO REAL (HU4)
+inputBuscador.addEventListener('input', function (evento) {
+  state.filtro = evento.target.value;
+  render();
+});
+
+// 10. GENERADOR DE MENSAJE FINAL
+btnGenerar.addEventListener('click', function () {
+  const idSeleccionado = selectPlantilla.value;
+  if (!idSeleccionado) {
     alert('Por favor, selecciona una plantilla primero.');
     return;
   }
 
-  const plantilla = plantillas[indiceSeleccionado];
+  const plantilla = state.plantillas.find(p => p.id === idSeleccionado);
   const nombreReemplazo = inputNombre.value.trim() || '{nombre}';
   const productoReemplazo = inputProducto.value.trim() || '{producto}';
 
-  // Encadenamos .replaceAll() para sustituir variables (Logro 3)
   const mensajeFinal = plantilla.mensaje
     .replaceAll('{nombre}', nombreReemplazo)
     .replaceAll('{producto}', productoReemplazo);
 
   salidaMensaje.textContent = mensajeFinal;
   cajaSalida.classList.remove('hidden');
-};
+});
 
-// 6. EVENT LISTENERS
-formPlantilla.addEventListener('submit', agregarPlantilla);
-btnGenerar.addEventListener('click', generarMensajeFinal);
-
-btnCopiar.addEventListener('click', () => {
+btnCopiar.addEventListener('click', function () {
   navigator.clipboard.writeText(salidaMensaje.textContent);
   const textoOriginal = btnCopiar.textContent;
   btnCopiar.textContent = '✓ ¡Copiado!';
@@ -129,12 +265,21 @@ btnCopiar.addEventListener('click', () => {
   }, 2000);
 });
 
-// Datos iniciales de ejemplo para probar rápido
-plantillas.push(
-  new Template(
-    'Confirmación de Compra',
-    'Hola {nombre}, gracias por comprar {producto}. Tu pedido está en camino.',
-    '#ventas'
-  )
+// 11. DATOS INICIALES DE PRUEBA
+agregarPlantilla(
+  'Confirmación de Compra',
+  'Hola {nombre}, gracias por comprar {producto}. Tu pedido está en camino.',
+  '#ventas'
 );
+agregarPlantilla(
+  'Seguimiento de Envío',
+  'Hola {nombre}, tu paquete de {producto} ya salió a reparto hoy.',
+  '#ventas'
+);
+agregarPlantilla(
+  'Soporte Técnico',
+  'Hola {nombre}, hemos recibido tu consulta sobre {producto}. En breve te ayudamos.',
+  '#soporte'
+);
+
 render();

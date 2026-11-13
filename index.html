@@ -9,21 +9,28 @@
 <body class="bg-slate-100 min-h-screen p-6">
   <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Mis Plantillas WhatsApp</h1>
 
-  <!-- Dos columnas: formulario y generador a la izquierda, tarjetas a la derecha -->
+  <!-- Dos columnas: formulario y generador a la izquierda, buscador + stats + tarjetas a la derecha -->
   <div class="max-w-5xl mx-auto grid gap-6 md:grid-cols-[340px_1fr]">
     
     <!-- Columna izquierda: acciones -->
     <div class="grid gap-6 self-start">
       
-      <!-- 1. Formulario para crear plantilla -->
+      <!-- 1. Formulario para crear o editar plantilla -->
       <form id="form-plantilla" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 grid gap-3">
-        <h2 class="font-bold text-slate-700 text-lg">Nueva Plantilla</h2>
+        <h2 id="titulo-form" class="font-bold text-slate-700 text-lg">Nueva Plantilla</h2>
         <input id="titulo" type="text" placeholder="Título (ej. Bienvenida)" required class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <input id="hashtag" type="text" placeholder="Hashtag (ej. ventas)" required class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <textarea id="mensaje" rows="3" placeholder="Mensaje (usa {nombre} o {producto})" required class="p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
-          + Agregar plantilla
-        </button>
+        
+        <div class="flex gap-2">
+          <button id="btn-submit" type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
+            + Agregar plantilla
+          </button>
+          <!-- Logro 1: Botón Cancelar edición (oculto por defecto) -->
+          <button id="btn-cancelar" type="button" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2.5 rounded-lg transition text-sm">
+            Cancelar
+          </button>
+        </div>
       </form>
 
       <!-- 2. Generador: Usar plantilla y reemplazar variables -->
@@ -52,12 +59,13 @@
 
     </div>
 
-    <!-- Columna derecha: grid de tarjetas -->
-    <div>
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="font-bold text-slate-700 text-lg">Plantillas Guardadas (<span id="contador-plantillas">0</span>)</h2>
-      </div>
-      <ul id="listaPlantillas" class="grid gap-4 sm:grid-cols-2 content-start"></ul>
+    <!-- Columna derecha: Buscador + Estadísticas + Grid de tarjetas (HU3 y HU4) -->
+    <div class="grid gap-4 content-start">
+      <input id="buscador" type="text" placeholder="🔍 Filtra por hashtag (ej. ventas)..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      
+      <aside id="panel-stats" class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm"></aside>
+      
+      <ul id="listaPlantillas" class="grid gap-3 sm:grid-cols-2"></ul>
     </div>
 
   </div>
