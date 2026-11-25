@@ -1,30 +1,23 @@
-# Gestor de Plantillas para WhatsApp (Laboratorio 14 - Módulo 4)
+# Gestor de Plantillas para WhatsApp (Laboratorio 15 - Módulo 4)
 
-Aplicación web interactiva desarrollada en JavaScript moderno (ES6+) y Tailwind CSS para crear, editar, eliminar, filtrar y reutilizar plantillas de mensajes de WhatsApp con variables dinámicas (`{nombre}` y `{producto}`).
+Aplicación web interactiva desarrollada en JavaScript moderno (ES6+) y Tailwind CSS con **persistencia de datos en el navegador** mediante `localStorage` y serialización `JSON`.
 
 ## 🚀 Enlace al Proyecto Desplegado
 [Ver Gestor de Plantillas en GitHub Pages](https://ericksalazarsanchez-byte.github.io/whatsapp-templates/)
 
 ---
 
-## 🎯 Delegación de Eventos (`listaPlantillas`)
-En lugar de asignar un `addEventListener` individual a cada botón de **Editar** o **Eliminar** dentro de cada tarjeta (los cuales se destruyen y recrean cada vez que se ejecuta `render()`), se implementó **un único listener en el contenedor padre** (`<ul id="listaPlantillas">`)[cite: 32]:
+## 💾 Cómo se Guarda y Carga el Estado (`js/persistence.js`)
 
-* Cuando el usuario hace clic dentro de la lista, se captura `evento.target.closest('button')` para identificar el botón pulsado.
-* Mediante `classList.contains('btn-editar')` o `classList.contains('btn-eliminar')` se determina la acción a ejecutar[cite: 32].
-* Se lee el identificador único de la plantilla desde el atributo HTML `data-id` (`btn.dataset.id`) para operar sobre el elemento exacto en el estado central sin importar cuántas tarjetas existan[cite: 31, 32].
+Dado que `localStorage` únicamente almacena cadenas de texto (`string`), toda la lógica de persistencia se aisló en el módulo `persistence.js` bajo una única clave (`whatsapp-templates`):
 
----
-
-## 📊 Función Pura y Datos Derivados (`contarPorHashtag`)
-La función `contarPorHashtag(plantillas)` es una **función pura** diseñada para calcular estadísticas en tiempo real a partir del estado central sin mutar el arreglo original[cite: 27, 33]:
-
-* **¿Para qué sirve?** Recorre la lista actual de plantillas en `state.plantillas` y construye un objeto diccionario donde cada llave es un hashtag (ej. `#ventas`, `#soporte`) y su valor es la cantidad de veces que aparece[cite: 33].
-* **Sincronización automática:** Es invocada dentro de `renderStats()` al final de cada ciclo de `render()`, garantizando que el total de plantillas, el desglose por etiqueta y el indicador de hashtag más usado se actualicen automáticamente al crear, editar o eliminar registros[cite: 34, 35].
+* **Guardado automático (`guardar()`):** Se ejecuta automáticamente al final de cada ciclo de `render()`. Utiliza `JSON.stringify(state.plantillas)` para serializar el arreglo de objetos a una cadena JSON y lo almacena mediante `localStorage.setItem()`. Cuando la lista queda vacía (`state.plantillas.length === 0`), ejecuta `localStorage.removeItem()` para mantener limpio el almacenamiento del navegador y actualiza el chip visual de estado (`Guardado ✓` / `Vacío`).
+* **Persistencia del filtro (`CLAVE_FILTRO`):** El término de búsqueda (`state.filtro`) se guarda directamente como texto plano con `setItem` y se restaura en el `<input id="buscador">` antes del primer `render()`.
+* **Carga inicial (`cargar()`):** Al abrir o recargar la página, lee el registro con `localStorage.getItem()`. Si no existe información previa, devuelve un arreglo vacío `[]` mediante operador ternario; si existe, reconstruye los datos con `JSON.parse()` y convierte nuevamente las fechas serializadas a instancias `new Date()` para conservar su formato legible.
 
 ---
 
-## 🛠️ Funcionalidades CRUD y Filtrado
-* **Crear y Editar (`HU2`):** Actualización inmutable del estado mediante `.map()` y modo de edición con botón de cancelación[cite: 33, 35].
-* **Eliminar (`HU1`):** Filtrado inmutable mediante `.filter()` con confirmación previa al usuario[cite: 31, 35].
-* **Filtrado Reactivo (`HU4`):** Búsqueda instantánea por hashtag mediante la función derivada `plantillasVisibles()` usando `.includes()` sin alterar los datos reales del estado[cite: 35].
+## 🛡️ Por qué se usa `try/catch` al Parsear
+La función nativa `JSON.parse()` lanza un error de sintaxis (`SyntaxError`) que detiene la ejecución de JavaScript si recibe texto malformado o corrupto (por ejemplo, si el almacenamiento local fue alterado manualmente o quedó truncado):
+
+* Envolver `JSON.parse(guardado)` dentro de un bloque **`try/catch`** actúa como red de seguridad: si ocurre un fallo al deserializar, el bloque `catch` captura la excepción, registra una advertencia controlada con `console.warn()` y devuelve un arreglo vacío `[]`. Esto garantiza que la aplicación arranque limpia y totalmente operativa sin quedarse con la pantalla rota.

@@ -1,8 +1,8 @@
 // =================================================================
-// LABORATORIO 14: INTERACCIÓN, DELEGACIÓN DE EVENTOS Y DATOS DERIVADOS
+// LABORATORIO 15: JSON, LOCALSTORAGE Y BLINDAJE DE ESTADO
 // =================================================================
 
-// 1. ESTADO CENTRAL (Única fuente de verdad)
+// 1. ESTADO CENTRAL
 const state = {
   plantillas: [],
   editandoId: null,
@@ -21,6 +21,8 @@ const btnCancelar = document.getElementById('btn-cancelar');
 const lista = document.getElementById('listaPlantillas');
 const panelStats = document.getElementById('panel-stats');
 const inputBuscador = document.getElementById('buscador');
+const btnVaciar = document.getElementById('btn-vaciar');
+const contadorVisitas = document.getElementById('contador-visitas');
 
 // Referencias del Generador
 const selectPlantilla = document.getElementById('select-plantilla');
@@ -40,7 +42,7 @@ const normalizarHashtag = (tag) => {
   return limpio;
 };
 
-// 3. FUNCIONES PURAS Y DATOS DERIVADOS (HU3 y HU4)
+// 3. FUNCIONES PURAS Y DATOS DERIVADOS
 function contarPorHashtag(plantillas) {
   const conteo = {};
   plantillas.forEach(function (plantilla) {
@@ -62,13 +64,12 @@ function plantillasVisibles() {
   );
 }
 
-// 4. RENDERIZADO DE ESTADÍSTICAS (HU3 + Logro 2)
+// 4. RENDERIZADO DE ESTADÍSTICAS
 function renderStats() {
   const total = state.plantillas.length;
   const porTag = contarPorHashtag(state.plantillas);
   const entradas = Object.entries(porTag);
 
-  // Logro 2: Encontrar el hashtag más usado
   let topTag = '';
   let maxCantidad = 0;
   entradas.forEach(([tag, cant]) => {
@@ -97,16 +98,23 @@ function renderStats() {
   `;
 }
 
-// 5. PATRÓN RENDER() PRINCIPAL
+// 5. PATRÓN RENDER() PRINCIPAL + SINCRONIZACIÓN CON LOCALSTORAGE (HU1 y HU2)
 function render() {
   lista.innerHTML = '';
   selectPlantilla.innerHTML = '<option value="">-- Selecciona una plantilla --</option>';
 
-  // Renderizar tarjetas visibles (filtradas o todas)
   plantillasVisibles().forEach(function (plantilla) {
     const mensajeVistaPrevia = plantilla.mensaje.length > 80
       ? plantilla.mensaje.slice(0, 80) + '...'
       : plantilla.mensaje;
+
+    // HU2: Reconstruir la fecha desde string JSON a objeto Date legible
+    const fechaLegible = new Date(plantilla.fecha).toLocaleDateString('es-PE');
+
+    // Logro 3: Mostrar etiqueta de edición si fue modificada
+    const etiquetaEditada = plantilla.editadaEl
+      ? `<span class="text-[10px] text-blue-600 block">Editada: ${new Date(plantilla.editadaEl).toLocaleDateString('es-PE')}</span>`
+      : '';
 
     const li = document.createElement('li');
     li.className = 'bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between';
@@ -114,7 +122,10 @@ function render() {
       <div>
         <div class="flex items-start justify-between gap-2">
           <strong class="text-slate-800">${plantilla.titulo}</strong>
-          <span class="text-xs text-slate-400 shrink-0">${plantilla.obtenerFechaFormateada()}</span>
+          <div class="text-right shrink-0">
+            <span class="text-xs text-slate-400 block">${fechaLegible}</span>
+            ${etiquetaEditada}
+          </div>
         </div>
         <p class="text-sm text-slate-600 mt-1 break-words">${mensajeVistaPrevia}</p>
         <div class="flex items-center justify-between mt-2">
@@ -135,7 +146,6 @@ function render() {
     lista.appendChild(li);
   });
 
-  // Llenar el selector del generador con todas las plantillas del estado
   state.plantillas.forEach(function (plantilla) {
     const option = document.createElement('option');
     option.value = plantilla.id;
@@ -144,16 +154,16 @@ function render() {
   });
 
   renderStats();
+  guardar(); // HU1: Persiste automáticamente cada cambio en localStorage
 }
 
-// 6. OPERACIONES CRUD INMUTABLES (HU1 y HU2)
+// 6. OPERACIONES CRUD INMUTABLES
 function agregarPlantilla(titulo, mensaje, hashtag) {
   const nueva = new Template(titulo, mensaje, hashtag);
   state.plantillas = [...state.plantillas, nueva];
 }
 
 function eliminarPlantilla(id) {
-  // Logro 3: Confirmar antes de eliminar
   const confirmar = confirm('¿Estás seguro de eliminar esta plantilla?');
   if (!confirmar) return;
 
@@ -171,7 +181,6 @@ function cargarEnFormulario(id) {
   inputHashtag.value = plantilla.hashtag;
   state.editandoId = id;
 
-  // Cambiar apariencia del formulario a modo edición
   tituloForm.textContent = 'Editar Plantilla';
   btnSubmit.textContent = '💾 Guardar cambios';
   btnSubmit.classList.replace('bg-emerald-600', 'bg-blue-600');
@@ -189,7 +198,7 @@ function cancelarEdicion() {
   btnCancelar.classList.add('hidden');
 }
 
-// 7. DELEGACIÓN DE EVENTOS EN LA LISTA (HU1 y HU2)
+// 7. DELEGACIÓN DE EVENTOS
 lista.addEventListener('click', function (evento) {
   const btn = evento.target.closest('button');
   if (!btn) return;
@@ -199,7 +208,7 @@ lista.addEventListener('click', function (evento) {
   if (btn.classList.contains('btn-editar')) cargarEnFormulario(id);
 });
 
-// 8. EVENTO SUBMIT (CREAR O ACTUALIZAR)
+// 8. EVENTO SUBMIT (CREAR O EDITAR CON Logro 3: editadaEl)
 form.addEventListener('submit', function (evento) {
   evento.preventDefault();
 
@@ -210,12 +219,15 @@ form.addEventListener('submit', function (evento) {
   if (!tituloTexto || !mensajeTexto || !hashtagNormalizado) return;
 
   if (state.editandoId) {
-    // Actualización inmutable con .map() manteniendo los métodos de la instancia
     state.plantillas = state.plantillas.map(plantilla => {
       if (plantilla.id === state.editandoId) {
-        plantilla.titulo = tituloTexto;
-        plantilla.mensaje = mensajeTexto;
-        plantilla.hashtag = hashtagNormalizado;
+        return {
+          ...plantilla,
+          titulo: tituloTexto,
+          mensaje: mensajeTexto,
+          hashtag: hashtagNormalizado,
+          editadaEl: new Date() // Logro 3: Marca temporal de edición
+        };
       }
       return plantilla;
     });
@@ -230,13 +242,24 @@ form.addEventListener('submit', function (evento) {
 
 btnCancelar.addEventListener('click', cancelarEdicion);
 
-// 9. EVENTO BUSCADOR EN TIEMPO REAL (HU4)
+// 9. HU4: VACIAR TODA LA COLECCIÓN
+btnVaciar.addEventListener('click', function () {
+  if (state.plantillas.length === 0) return;
+  const confirmar = confirm('¿Deseas vaciar todas las plantillas y limpiar el almacenamiento?');
+  if (!confirmar) return;
+
+  state.plantillas = [];
+  cancelarEdicion();
+  render(); // render() llama a guardar(), que ejecuta removeItem()
+});
+
+// 10. HU5: BUSCADOR PERSISTENTE
 inputBuscador.addEventListener('input', function (evento) {
   state.filtro = evento.target.value;
   render();
 });
 
-// 10. GENERADOR DE MENSAJE FINAL
+// 11. GENERADOR DE MENSAJE FINAL
 btnGenerar.addEventListener('click', function () {
   const idSeleccionado = selectPlantilla.value;
   if (!idSeleccionado) {
@@ -265,21 +288,15 @@ btnCopiar.addEventListener('click', function () {
   }, 2000);
 });
 
-// 11. DATOS INICIALES DE PRUEBA
-agregarPlantilla(
-  'Confirmación de Compra',
-  'Hola {nombre}, gracias por comprar {producto}. Tu pedido está en camino.',
-  '#ventas'
-);
-agregarPlantilla(
-  'Seguimiento de Envío',
-  'Hola {nombre}, tu paquete de {producto} ya salió a reparto hoy.',
-  '#ventas'
-);
-agregarPlantilla(
-  'Soporte Técnico',
-  'Hola {nombre}, hemos recibido tu consulta sobre {producto}. En breve te ayudamos.',
-  '#soporte'
-);
+// 12. ARRANQUE DE LA APLICACIÓN (HU2, HU5 y Logros 1 y 2)
+state.plantillas = cargar();
+state.filtro = cargarFiltro();
+inputBuscador.value = state.filtro;
 
-render();
+const totalVisitas = registrarAperturaApp();
+contadorVisitas.textContent = `Sesiones abiertas en este navegador: ${totalVisitas}`;
+
+// Logro 1: Exportación formateada en consola
+console.log('📦 Estado actual en localStorage:\n', JSON.stringify(state.plantillas, null, 2));
+
+render()

@@ -7,9 +7,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen p-6">
-  <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Mis Plantillas WhatsApp</h1>
+  <div class="max-w-5xl mx-auto mb-6 text-center">
+    <h1 class="text-3xl font-bold text-slate-800">Mis Plantillas WhatsApp</h1>
+    <p id="contador-visitas" class="text-xs text-slate-400 mt-1"></p>
+  </div>
 
-  <!-- Dos columnas: formulario y generador a la izquierda, buscador + stats + tarjetas a la derecha -->
+  <!-- Dos columnas: formulario y generador a la izquierda, buscador + stats + tarjetas + barra de estado a la derecha -->
   <div class="max-w-5xl mx-auto grid gap-6 md:grid-cols-[340px_1fr]">
     
     <!-- Columna izquierda: acciones -->
@@ -26,7 +29,6 @@
           <button id="btn-submit" type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
             + Agregar plantilla
           </button>
-          <!-- Logro 1: Botón Cancelar edición (oculto por defecto) -->
           <button id="btn-cancelar" type="button" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2.5 rounded-lg transition text-sm">
             Cancelar
           </button>
@@ -59,18 +61,27 @@
 
     </div>
 
-    <!-- Columna derecha: Buscador + Estadísticas + Grid de tarjetas (HU3 y HU4) -->
+    <!-- Columna derecha: Buscador + Estadísticas + Grid + Barra de Estado (HU4) -->
     <div class="grid gap-4 content-start">
       <input id="buscador" type="text" placeholder="🔍 Filtra por hashtag (ej. ventas)..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
       
       <aside id="panel-stats" class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm"></aside>
       
       <ul id="listaPlantillas" class="grid gap-3 sm:grid-cols-2"></ul>
+
+      <!-- HU4: Barra de estado y botón Vaciar todo -->
+      <div class="flex items-center justify-between border-t border-slate-200 pt-3 mt-1">
+        <p id="estado" class="text-xs font-medium text-slate-600 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">Vacío</p>
+        <button id="btn-vaciar" type="button" class="text-xs px-3 py-1.5 rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 font-medium transition">
+          🗑️ Vaciar todo
+        </button>
+      </div>
     </div>
 
   </div>
 
   <script src="js/models/Template.js"></script>
+  <script src="js/persistence.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
